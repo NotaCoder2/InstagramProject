@@ -1,0 +1,79 @@
+{% extends "project_base.html" %}
+
+{% block content %}
+
+    <div id="mainPageCarousel" class="carousel slide" data-ride="carousel" data-interval="false" data-keyboard="true">
+      <div class="carousel-inner">
+        <div class="carousel-item active" id="carousel-item-parent">
+            <img src="{{user_info['main_photo']}}" alt="There should be an image ^^" id="main-photo" class="ml-5">
+            <div class="label1">
+                <div class="h1 ml-5">{{ user_info['username'] }}</div>
+                <div class="label2 ml-5">Publications: <span class="badge badge-pills" id="badge-posts-count"></span></div>
+                <div class="label2">Subscribers: <span class="badge badge-pills" id="badge-followers-count"></span></div>
+                <div class="label2">Subscriptions: <span class="badge badge-pills" id="badge-subscriptions-count"></span></div>
+            </div>
+            {% if user_info['username'] == sess_info['username'] %}
+                <div class="text-center">
+                    <div class="btn-group">
+                        <a href="/upload_photo" class="btn btn-outline-primary btn-lg mb-4 rounded" role="button">Add a photo</a>
+                        <a href="/change_info" class="btn btn-outline-primary btn-lg mb-4 ml-5 rounded" role="button">Change your profile</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center">
+                    <div class="btn-group">
+                        {% if user_info['subscribed'] == 0 %}
+                        <button class="btn btn-primary btn-lg mb-4 rounded" action="subscribe" id="sub-button" onclick="sub_unsub('{{ user_info['userid'] }}')">Подписаться</button>
+                        {% else %}
+                        <button class="btn btn-outline-primary btn-lg mb-4 rounded" action="unsubscribe" id="sub-button" onclick="sub_unsub('{{ user_info['userid'] }}')">Отписаться</button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="text-center">
+            {% for post in posts %}
+                <img src={{post['thumb']}} alt="There should be an image ^^" id="img-list-item" class="mr-4 mb-4" onclick="show_post({{post['pid']}})">
+            {% endfor %}
+            </div>
+        </div>
+
+        <div class="carousel-item" id="carousel-item-child">
+            <div class="text-left d-flex justify-content-start p-2">
+                <i class="fas fa-long-arrow-alt-left fa-2x align-middle d-flex justify-content-start align-self-center" id="back-arrow" onclick="back2parent()"></i>
+                <img src="{{user_info['main_photo']}}" alt="There should be an image ^^" id="main-photo-child" class="ml-4 mr-2 d-flex justify-content-start align-self-center">
+                <span class="h3 ml-2 d-flex justify-content-start align-self-center">{{user_info['username']}}</span>
+                {% if posts != [] and posts[0]['userid'] == session['userid'] %}
+                <div class="btn-group ml-auto d-flex justify-content-end align-self-center">
+                  <button class="btn btn-outline-dark dropdown-toggle d-flex justify-content-end" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-tools fa-lg d-flex justify-content-start align-self-center"></i>
+                  </button>
+                  <div class="dropdown-menu dropdown-menu-right mt-2" aria-labelledby="dropdownMenuButton">
+                    <a class="dropdown-item" id="actionChange" href="#" onclick="show_title_edit()">Change description</a>
+                    <a class="dropdown-item" href="#" data-toggle="modal" data-target="#deleteModal">Delete</a>
+                  </div>
+                </div>
+                {% endif %}
+            </div>
+            <div id="child-img" class="text-center"></div>
+            <div class="m-2">
+                <form>
+                  <div class="d-flex">
+                    <div class="d-flex col-2">
+                        <i id="like-icon" class="far fa-heart fa-2x cursor-pointer align-self-center" onclick="add_like()"></i>
+                        <span id="like-counter" class="h4 ml-2 align-self-center"></span>
+                    </div>
+                    <div class="w-75 ml-auto">
+                        <input id="child-comment-text" type="text" name="comment" class="form-control" placeholder="Comment">
+                    </div>
+                    <div class="d-flex ml-4">
+                        <button class="btn btn-outline-primary" type="button" onclick="send_comment()">Submit</button>
+                    </div>
+                  </div>
+                </form>
+            </div>
+            <div id="child-comments" class="mt-4 mb-5"></div>
+        </div>
+      </div>
+    </div>
+{% endblock %}

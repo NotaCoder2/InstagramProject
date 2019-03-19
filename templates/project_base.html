@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <title>{{ title }}</title>
+        <style>
+        h1 {
+            margin-bottom: 30px
+        }
+        #img-list-item {
+            width: 300px;
+            height: 300px;
+            cursor: pointer;
+        }
+        #main-photo {
+            max-height: 150px;
+            clip-path: circle(43%);
+        }
+        #main-photo-child {
+            max-height: 50px;
+            clip-path: circle(50%);
+        }
+        #back-arrow{
+            cursor: pointer;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .label1 {
+            display: inline-block;
+            position: relative;
+            bottom: -30px;
+        }
+        .label2 {
+            display: inline-block;
+        }
+        .comment-time {
+            color: grey;
+            font-size: 12pt;
+            margin-left: 2rem;
+        }
+        </style>
+        <script>
+        function show_post(pid){
+            $("#carousel-item-parent").removeClass('active');
+            $("#carousel-item-child").addClass('active');
+            $.get( "/api/posts/"+pid, function( r ) {
+                $("#child-img").html('<img src="' + r['post'][2] + '" alt="There should be a picture ^^" class="img-fluid">');
+                $("#child-img").append('<input id="child-img-id" type="hidden" value="' + r['post'][0] + '"/>');
+                $("#actionDelete").attr('href', '/del_post/'+ r['post'][0]);
+            });
+            $.get('/api/likes/' + pid, function( r ) {
+                $("#like-counter").text( r['count'] );
+                if (r['your'] == 1) {
+                    $("#like-icon").removeClass('far');
+                    $("#like-icon").addClass('fas');
+                    $("#like-icon").removeClass('text-dark');
+                    $("#like-icon").addClass('text-danger');
+                    $("#like-icon").attr( 'onclick', 'del_like()' );
+                } else {
+                    $("#like-icon").removeClass('fas');
+                    $("#like-icon").addClass('far');
+                    $("#like-icon").removeClass('text-danger');
+                    $("#like-icon").addClass('text-dark');
+                    $("#like-icon").attr( 'onclick', 'add_like()' );
+                }
+            })
+            get_comments(pid);
+        }
+
+        function back2parent(){
+            $("#carousel-item-parent").addClass('active');
+            $("#carousel-item-child").removeClass('active');
+        }
+
+        function add_like() {
+            $("#like-icon").removeClass('far');
+            $("#like-icon").addClass('fas');
+            $("#like-icon").removeClass('text-dark');
+            $("#like-icon").addClass('text-danger');
+            $("#like-icon").attr( 'onclick', 'del_like()' );
+            post_id = $("#child-img-id").val();
+            $.post('/api/likes/' + post_id, function( r ) {
+                $("#like-counter").text( r['count'] );
+            })
+        }
+
+        function del_like() {
+            $("#like-icon").removeClass('fas');
+            $("#like-icon").addClass('far');
+            $("#like-icon").removeClass('text-danger');
+            $("#like-icon").addClass('text-dark');
+            $("#like-icon").attr( 'onclick', 'add_like()' );
+            $("#like-counter").text( '' );
+            post_id = $("#child-img-id").val();
+            $.ajax({
+                url: '/api/likes/' + post_id,
+                type: 'DELETE',
+                success: function( r ) {
+                    $("#like-counter").text( r['count'] );
+                }
+            });
+        }
+
+        function show_title_edit() {
+            $("#child-title-div-2").addClass("hidden")
+            $("#child-title-div-1").removeClass("hidden")
+        }
+        function change_title(pid) {
+            new_title = $("#child-title-input").val()
+            $.post('/api/posts/' + pid, {title: new_title}, function (r){
+                get_comments(pid)
+            })
+        }
+
+        function get_comments(pid) {
+            $.get('/api/comments/' + pid, function(r) {
+                content = '';
+                r['comments'].forEach(function(comment){
+                    if (comment[0] < 0) {
+                        if (comment[4] != '') {
+                            content += '<div class="row hidden" id="child-title-div-1">';
+                            content += '<div class="col-2 h5 font-weight-bold text-right"></div>';
+                            content += '<div class="col-auto h5 w-75 text-left"><input type="text" id="child-title-input" value="' + comment[4] + '" class="form-control" placeholder="Publish description"></div>';
+                            content += '<div class="col-1 text-center text-primary"><a onclick="change_title(' + pid + ')"><i class="fas fa-check cursor-pointer"></i></a></div>';
+                            content += '</div>';
+                            content += '<div class="row border-bottom" id="child-title-div-2">';
+                            content += '<div class="col-2 h5 font-weight-bold text-right">' + comment[3] + '</div>';
+                            content += '<div class="col-auto h5 w-75 text-left">' + comment[4] + ' <span class="comment-time">'+ timeConverter(comment[5]) +'</span></div>';
+                            content += '</div>';
+                        } else {
+                            content += '<div class="row hidden" id="child-title-div-1">';
+                            content += '<div class="col-2 h5 font-weight-bold text-right"></div>';
+                            content += '<div class="col-auto h5 w-75 text-left"><input type="text" id="child-title-input" value="" class="form-control" placeholder="Publish description"></div>';
+                            content += '<div class="col-1 text-center text-primary"><a onclick="change_title(' + pid + ')"><i class="fas fa-check cursor-pointer"></i></a></div>';
+                            content += '</div>';
+                        }
+                    } else if (comment[4] != '') {
+                        content += '<div class="row border-bottom">';
+                        content += '<div class="col-2 h5 font-weight-bold text-right">' + comment[3] + '</div>';
+                        content += '<div class="col-auto h5 w-75 text-left">' + comment[4] + ' <span class="comment-time">'+ timeConverter(comment[5]) +'</span></div>';
+                        if ( comment[2] == {{session['userid']}} && comment[0] >= 0 ) {
+                            content += '<div class="col-1 text-center"><a onclick="del_comment(' + comment[0] + ')"><i class="fas fa-trash-alt cursor-pointer"></i></a></div>';
+                        }
+                        content += '</div>';
+                    }
+                    $('#child-comments').html(content);
+                })
+            })
+        }
+        function send_comment() {
+            post_id = $("#child-img-id").val();
+            comment_text = $("#child-comment-text").val();
+            $.post('/api/comments/' + post_id, { comment: comment_text } , function( r ) {
+                get_comments(post_id);
+                $("#child-comment-text").val('');
+            })
+        }
+
+        function del_comment(c_id) {
+            post_id = $("#child-img-id").val();
+            $.ajax({
+                url: '/api/comments/' + post_id,
+                type: 'DELETE',
+                data: { comment_id: c_id },
+                success: function( r ) {
+                    get_comments(post_id);
+                }
+            });
+        }
+
+        function search_user() {
+            username = $('#navbar-search').val()
+            if (username == '') return false;
+            $.get('/api/users/0', {user_name: username}, function(r){
+                if ( r['user'] ) {
+                    window.location = '/@' + r['user'][1]
+                } else {
+                    $('#navbar-search').popover('enable')
+                    $('#navbar-search').popover('show')
+                    window.setTimeout(function() {
+                        $('#navbar-search').popover('hide');
+                        $('#navbar-search').popover('disable');
+                    }, 5000)
+                }
+            })
+        }
+
+        function sub_unsub(user_id) {
+            user_action = $('#sub-button').attr('action')
+            $.post('/api/users/' + user_id, {action: user_action}, function(r){
+                if (r['success'] == 'OK') {
+                    $('#sub-button').attr('action', r['next']);
+                    $('#sub-button').text(r['text'])
+                    if (user_action == 'subscribe') {
+                        $('#sub-button').removeClass('btn-primary')
+                        $('#sub-button').addClass('btn-outline-primary')
+                        update_user_stats(user_id)
+                    } else if (user_action == 'unsubscribe') {
+                        $('#sub-button').removeClass('btn-outline-primary')
+                        $('#sub-button').addClass('btn-primary')
+                        update_user_stats(user_id)
+                    }
+                }
+            })
+        }
+
+        function update_user_stats(user_id) {
+            $.get('/api/users/' + user_id, function(r) {
+                $('#badge-posts-count').text(r['posts_count']);
+                $('#badge-followers-count').text(r['followers_count']);
+                $('#badge-subscriptions-count').text(r['subscriptions_count']);
+            })
+        }
+
+        function addZero(i) {
+            if (i < 10) {
+                i = "0" + i;
+            }
+            return i;
+        }
+        function timeConverter(UNIX_timestamp){
+            var a = new Date(UNIX_timestamp * 1000);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            var year = a.getFullYear();
+            var month = months[a.getMonth()];
+            var date = a.getDate();
+            var hour = addZero(a.getHours());
+            var min = addZero(a.getMinutes());
+            var sec = addZero(a.getSeconds());
+            var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+            return time;
+        }
+        </script>
+    </head>
+    <body>
+    <div class="modal" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Warning</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <div class="modal-body"> Are you sure you want to delete your post? </div>
+                <div class="modal-footer">
+                    <a type="button" href="#" class="btn btn-secondary" data-dismiss="modal">No</a>
+                    <a type="button" href="#" id="actionDelete" class="btn btn-primary">Yes</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <header>
+        <nav class="navbar navbar-light bg-light">
+            <i class="fab fa-instagram fa-2x d-flex justify-content-start align-self-center mr-2"></i>
+            <a class="navbar-brand d-flex justify-content-start mr-auto" href="/">Instagram</a>
+        {% if "userid" in session %}
+            <div class="my-2 my-lg-0 d-flex justify-content-start mr-auto">
+                <input class="form-control mr-sm-2 d-flex justify-content-start mr-auto" id="navbar-search"
+                       type="search" placeholder="Find a user" aria-label="Find a user"
+                        data-placement="bottom" data-content="User not found">
+                <button class="btn btn-outline-primary my-2 my-sm-0 d-flex justify-content-start mr-auto" onclick="search_user()">Find</button>
+            </div>
+            <a class="navbar-brand d-flex justify-content-end" href="/">{{ sess_info['username'] }}</a>
+            <a class="btn btn-outline-primary my-2 my-sm-0 d-flex justify-content-end" type="submit" href="/logout">Log out</a>
+        {% endif %}
+        </nav>
+    </header>
+    <main role="main" class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} mt-4" role="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.7.2/js/all.js" integrity="sha384-0pzryjIRos8mFBWMzSSZApWtPl/5++eIfzYmTgBBmXYdhvxPc+XcFEk+zJwDgWbP" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready( function() {
+            update_user_stats({{ user_info['userid'] }});
+        });
+    </script>
+
+    </body>
+</html>
